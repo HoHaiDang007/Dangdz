@@ -1,263 +1,103 @@
--- main.lua — Muscle Legends Cyberpunk Hub by Bcm2007
+-- main.lua — Muscle Legends Premium Hub v2 by Bcm2007
 
--- Services
-local Players       = game:GetService("Players")
-local RS            = game:GetService("ReplicatedStorage")
-local UIS           = game:GetService("UserInputService")
-local TweenService  = game:GetService("TweenService")
-local VirtualUser   = game:GetService("VirtualUser")
+-- Services local Players      = game:GetService("Players") local RS           = game:GetService("ReplicatedStorage") local UIS          = game:GetService("UserInputService") local TweenService = game:GetService("TweenService") local VirtualUser  = game:GetService("VirtualUser")
 
 local player = Players.LocalPlayer
 
--- Helper: notification
-local function Notify(msg, t)
-    t = t or 2
-    local gui = player:FindFirstChild("PlayerGui")
-    local ng = gui:FindFirstChild("CyberNotifs") or Instance.new("ScreenGui", gui)
-    ng.Name = "CyberNotifs"
-    local frame = Instance.new("Frame", ng)
-    frame.Size = UDim2.new(0, 260, 0, 38)
-    frame.Position = UDim2.new(0.5, -130, 0.15, #ng:GetChildren()*45)
-    frame.BackgroundColor3 = Color3.fromRGB(20,20,30)
-    frame.BorderSizePixel = 0
-    local cr = Instance.new("UICorner", frame); cr.CornerRadius = UDim.new(0,6)
-    local lbl = Instance.new("TextLabel", frame)
-    lbl.Size = UDim2.new(1, -10, 1, -10); lbl.Position = UDim2.new(0,5,0,5)
-    lbl.BackgroundTransparency = 1
-    lbl.Text = msg; lbl.Font = Enum.Font.GothamBold; lbl.TextSize = 14
-    lbl.TextColor3 = Color3.fromRGB(180,255,255)
-    task.delay(t, function()
-        for i=0,1,0.05 do
-            frame.BackgroundTransparency = i
-            lbl.TextTransparency = i
-            task.wait(0.03)
-        end
-        frame:Destroy()
-    end)
-end
+-- ===== Helpers ===== local function createNotification(text, duration) local notifGui = player:FindFirstChild("PlayerGui"):FindFirstChild("Notifications") if not notifGui then notifGui = Instance.new("ScreenGui", player.PlayerGui) notifGui.Name = "Notifications" end local frame = Instance.new("Frame", notifGui) frame.Size = UDim2.new(0,250,0,50) frame.Position = UDim2.new(0.5, -125, 0.2, (#notifGui:GetChildren()-1)*55) frame.BackgroundColor3 = Color3.fromRGB(30,30,40) frame.BackgroundTransparency = 0.1 frame.BorderSizePixel = 0 frame.ZIndex = 10 local corner = Instance.new("UICorner", frame) corner.CornerRadius = UDim.new(0, 12)
 
--- Build GUI
-local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
-gui.Name = "CyberHub"
-gui.ResetOnSpawn = false
+local label = Instance.new("TextLabel", frame)
+label.Size = UDim2.new(1, -20, 1, -20)
+label.Position = UDim2.new(0, 10, 0, 10)
+label.BackgroundTransparency = 1
+label.Text = text
+label.TextColor3 = Color3.fromRGB(255,255,255)
+label.Font = Enum.Font.GothamSemibold
+label.TextSize = 16
+label.TextWrapped = true
+label.ZIndex = 11
 
-local win = Instance.new("Frame", gui)
-win.Size = UDim2.new(0, 420, 0, 480)
-win.Position = UDim2.new(0.5, -210, 0.5, -240)
-win.BackgroundColor3 = Color3.fromRGB(10,10,15)
-win.BorderSizePixel = 0
-win.Active = true; win.Draggable = true
-local winCr = Instance.new("UICorner", win); winCr.CornerRadius = UDim.new(0,12)
-local shadow = Instance.new("ImageLabel", win)
-shadow.Size = win.Size; shadow.Position = UDim2.new(0,6,0,6)
-shadow.Image = "rbxassetid://7031086005"; shadow.ScaleType = Enum.ScaleType.Slice
-shadow.SliceCenter = Rect.new(49,49,450,450); shadow.ImageColor3 = Color3.new(0,0,0)
-shadow.ImageTransparency = 0.8; shadow.ZIndex = 0
-
--- Header
-local header = Instance.new("Frame", win)
-header.Size = UDim2.new(1,0,0,48)
-header.BackgroundColor3 = Color3.fromRGB(25,0,50)
-local hCr = Instance.new("UICorner", header); hCr.CornerRadius = UDim.new(0,12)
-local grad = Instance.new("UIGradient", header)
-grad.Color = ColorSequence.new(Color3.fromRGB(150,0,255), Color3.fromRGB(50,0,150))
-grad.Rotation = 90
-local title = Instance.new("TextLabel", header)
-title.Size, title.Position = UDim2.new(1,0,1,0), UDim2.new(0,0,0,0)
-title.BackgroundTransparency = 1; title.Text = "Cyber Legends Hub"
-title.Font = Enum.Font.GothamBold; title.TextSize = 20; title.TextColor3 = Color3.fromRGB(200,255,255)
-local close = Instance.new("TextButton", header)
-close.Size, close.Position = UDim2.new(0,32,0,32), UDim2.new(1,-40,0,8)
-close.BackgroundTransparency = 1; close.Text = "✕"; close.Font = Enum.Font.GothamBold
-close.TextSize = 18; close.TextColor3 = Color3.fromRGB(255,100,100)
-close.MouseButton1Click:Connect(function() gui:Destroy() end)
-
--- Tabs
-local tabs = {"Auto","Farm","Misc","Stats"}
-local pages, tabBtns = {}, {}
-local tabBar = Instance.new("Frame", win)
-tabBar.Size = UDim2.new(1,0,0,36); tabBar.Position = UDim2.new(0,0,0,48); tabBar.BackgroundTransparency = 1
-
-for i,name in ipairs(tabs) do
-    local btn = Instance.new("TextButton", tabBar)
-    btn.Size = UDim2.new(1/#tabs, -6, 1, -6)
-    btn.Position = UDim2.new((i-1)/#tabs, 3, 0, 3)
-    btn.BackgroundColor3 = Color3.fromRGB(30,0,60)
-    btn.Font = Enum.Font.GothamBold; btn.Text = name; btn.TextSize = 14
-    btn.TextColor3 = Color3.fromRGB(180,255,255)
-    local bCr = Instance.new("UICorner", btn); bCr.CornerRadius = UDim.new(0,8)
-    tabBtns[name], pages[name] = btn, Instance.new("ScrollingFrame", win)
-    pages[name].Size = UDim2.new(1,-20,1,-100); pages[name].Position = UDim2.new(0,10,0,92)
-    pages[name].BackgroundTransparency = 1; pages[name].Visible = false
-    pages[name].ScrollBarThickness = 6
-    local layout = Instance.new("UIListLayout", pages[name])
-    layout.Padding = UDim.new(0,8); layout.SortOrder = Enum.SortOrder.LayoutOrder
-
-    btn.MouseButton1Click:Connect(function()
-        for _,b in pairs(tabBtns) do
-            TweenService:Create(b, TweenInfo.new(0.2), {BackgroundColor3=Color3.fromRGB(30,0,60)}):Play()
-        end
-        TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3=Color3.fromRGB(150,0,255)}):Play()
-        for _,pg in pairs(pages) do pg.Visible = false end
-        pages[name].Visible = true
-    end)
-end
-
--- Activate first tab
-TweenService:Create(tabBtns["Auto"], TweenInfo.new(0), {BackgroundColor3=Color3.fromRGB(150,0,255)}):Play()
-pages["Auto"].Visible = true
-
--- Toggle creator
-local toggles = {}
-local function MakeToggle(page, label, key, func)
-    toggles[key] = false
-    local btn = Instance.new("TextButton", page)
-    btn.Size = UDim2.new(1,0,0,32)
-    btn.BackgroundColor3 = Color3.fromRGB(20,0,50)
-    btn.Font = Enum.Font.Gotham; btn.TextSize = 14
-    btn.TextColor3 = Color3.fromRGB(180,255,255)
-    btn.Text = label.." [OFF]"
-    local cr = Instance.new("UICorner", btn); cr.CornerRadius = UDim.new(0,8)
-
-    -- hover glow
-    btn.MouseEnter:Connect(function()
-        TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3=Color3.fromRGB(40,0,80)}):Play()
-    end)
-    btn.MouseLeave:Connect(function()
-        local col = toggles[key] and Color3.fromRGB(100,0,200) or Color3.fromRGB(20,0,50)
-        TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3=col}):Play()
-    end)
-
-    btn.MouseButton1Click:Connect(function()
-        toggles[key] = not toggles[key]
-        local on = toggles[key]
-        btn.Text = label.." ["..(on and "ON" or "OFF").."]"
-        local col = on and Color3.fromRGB(100,0,200) or Color3.fromRGB(20,0,50)
-        TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3=col}):Play()
-        Notify(label.." "..(on and "ENABLED" or "DISABLED"))
-
-        if on then spawn(func) end
-    end)
-    return btn
-end
-
--- Feature functions
-local function f_Strength()
-    local ev = RS:WaitForChild("TrainEvent")
-    while toggles.strength do ev:FireServer(); task.wait(0.1) end
-end
-local function f_Punch()
-    local ev = RS:WaitForChild("PunchRemote")
-    while toggles.punch do ev:FireServer(); task.wait(0.1) end
-end
-local function f_Rock()
-    local ev = RS:WaitForChild("RockRemote")
-    while toggles.rock do ev:FireServer(); task.wait(0.1) end
-end
-local function f_Kill()
-    local ev = RS:WaitForChild("DamageEvent")
-    while toggles.kill do
-        for _,pl in ipairs(Players:GetPlayers()) do
-            if pl~=player and pl.Character and pl.Character:FindFirstChild("Humanoid") then
-                ev:FireServer(pl.Character.Humanoid)
-            end
-        end
-        task.wait(0.5)
+delay(duration or 2, function()
+    for i = 1, 20 do
+        frame.BackgroundTransparency = frame.BackgroundTransparency + 0.045
+        label.TextTransparency = label.TextTransparency + 0.05
+        wait(0.03)
     end
-end
-
-local function f_Rebirth()
-    local ev = RS:WaitForChild("RebirthEvent")
-    while toggles.rebirth do ev:FireServer(); Notify("Reborn!"); task.wait(5) end
-end
-local function f_RebirthFast()
-    local ev = RS:WaitForChild("RebirthEvent")
-    while toggles.rebirthFast do ev:FireServer(); task.wait(0.2) end
-end
-local function f_Grind()
-    local te = RS:WaitForChild("TrainEvent")
-    local re = RS:WaitForChild("RebirthEvent")
-    while toggles.grind do te:FireServer(); re:FireServer(); task.wait(0.1) end
-end
-local function f_Pet()
-    local ev = RS:WaitForChild("buyEgg")
-    while toggles.pet do ev:InvokeServer("Advanced Egg"); task.wait(2) end
-end
-local function f_Aura()
-    local ev = RS:WaitForChild("buyAura")
-    while toggles.aura do ev:FireServer(); task.wait(3) end
-end
-local function f_AFK()
-    while toggles.afk do
-        task.wait(60)
-        VirtualUser:Button2Down(Vector2.new(),workspace.CurrentCamera.CFrame)
-        task.wait(1)
-        VirtualUser:Button2Up(Vector2.new(),workspace.CurrentCamera.CFrame)
-    end
-end
-
--- Create toggles in pages
-MakeToggle(pages["Auto"], "Auto Strength",   "strength",   f_Strength)
-MakeToggle(pages["Auto"], "Auto Punch",      "punch",      f_Punch)
-MakeToggle(pages["Auto"], "Auto Rock",       "rock",       f_Rock)
-MakeToggle(pages["Auto"], "Auto Kill",       "kill",       f_Kill)
-
-MakeToggle(pages["Farm"], "Auto Rebirth",     "rebirth",     f_Rebirth)
-MakeToggle(pages["Farm"], "Fast Rebirth",     "rebirthFast", f_RebirthFast)
-MakeToggle(pages["Farm"], "Fast Grind",       "grind",       f_Grind)
-
-MakeToggle(pages["Misc"], "Auto Pet",        "pet",        f_Pet)
-MakeToggle(pages["Misc"], "Auto Aura",       "aura",       f_Aura)
-MakeToggle(pages["Misc"], "Anti AFK",        "afk",        f_AFK)
-
--- Stats tab: inputs
-local stats = pages["Stats"]
-local sBox = Instance.new("TextBox", stats)
-sBox.Size = UDim2.new(1,0,0,32); sBox.PlaceholderText="WalkSpeed"; sBox.Text="100"
-sBox.Font=Enum.Font.Gotham; sBox.TextSize=14; sBox.BackgroundColor3=Color3.fromRGB(20,0,50)
-local jBox = sBox:Clone()
-jBox.Parent = stats; jBox.PlaceholderText="JumpPower"; jBox.Text="100"; jBox.Position=UDim2.new(0,0,0,40)
-local function applySJ()
-    if player.Character then
-        local h = player.Character:FindFirstChild("Humanoid")
-        if h then
-            h.WalkSpeed = tonumber(sBox.Text) or 100
-            h.JumpPower = tonumber(jBox.Text) or 100
-        end
-    end
-end
-sBox.FocusLost:Connect(applySJ)
-jBox.FocusLost:Connect(applySJ)
-Players.LocalPlayer.CharacterAdded:Connect(function() task.wait(1) applySJ() end)
-
--- Fly
-local flying = false
-local function FlyLoop()
-    local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-    if not hrp then return end
-    local bg = Instance.new("BodyGyro", hrp); bg.P=9e4; bg.MaxTorque=Vector3.new(4e4,4e4,4e4)
-    local bv = Instance.new("BodyVelocity", hrp); bv.MaxForce=Vector3.new(9e9,9e9,9e9)
-    while flying and hrp.Parent do
-        local vel = Vector3.new()
-        local cam = workspace.CurrentCamera
-        if UIS:IsKeyDown(Enum.KeyCode.W) then vel = cam.CFrame.LookVector*50 end
-        if UIS:IsKeyDown(Enum.KeyCode.S) then vel = -cam.CFrame.LookVector*50 end
-        if UIS:IsKeyDown(Enum.KeyCode.A) then vel = -cam.CFrame.RightVector*50 end
-        if UIS:IsKeyDown(Enum.KeyCode.D) then vel = cam.CFrame.RightVector*50 end
-        bv.Velocity, bg.CFrame = vel, cam.CFrame
-        task.wait()
-    end
-    bg:Destroy(); bv:Destroy()
-end
-UIS.InputBegan:Connect(function(inp,g)
-    if g then return end
-    if inp.KeyCode==Enum.KeyCode.F then
-        flying = not flying
-        if player.Character then player.Character.Humanoid.PlatformStand = flying end
-        if flying then spawn(FlyLoop) end
-        Notify("Fly "..(flying and "ON" or "OFF"))
-    end
+    frame:Destroy()
 end)
 
--- Done
-Notify("Loaded CyberHub Premium!", 3)
+end
+
+-- ===== Main UI ===== local gui = Instance.new("ScreenGui", player.PlayerGui) gui.Name = "MLPremiumHubV2" gui.ResetOnSpawn = false
+
+-- Background Blur local blurFrame = Instance.new("Frame", gui) blurFrame.Size = UDim2.new(1,0,1,0) blurFrame.BackgroundTransparency = 0.7 blurFrame.BackgroundColor3 = Color3.fromRGB(0,0,0)
+
+-- Window local window = Instance.new("Frame", gui) window.Size = UDim2.new(0, 400, 0, 460) window.Position = UDim2.new(0.5, -200, 0.5, -230) window.BackgroundColor3 = Color3.fromRGB(20,20,25) window.BorderSizePixel = 0 window.Active = true window.Draggable = true local winCorner = Instance.new("UICorner", window) winCorner.CornerRadius = UDim.new(0, 14)
+
+-- Shadow local shadow = Instance.new("ImageLabel", window) shadow.Size = window.Size shadow.Position = UDim2.new(0,4,0,4) shadow.Image = "rbxassetid://7031086005" shadow.ScaleType = Enum.ScaleType.Slice shadow.SliceCenter = Rect.new(49,49,450,450) shadow.ImageColor3 = Color3.fromRGB(0,0,0) shadow.ImageTransparency = 0.85 shadow.ZIndex = 0
+
+-- Header local header = Instance.new("Frame", window) header.Size = UDim2.new(1,0,0,50) header.BackgroundColor3 = Color3.fromRGB(40,0,80) local hdrCorner = Instance.new("UICorner", header) hdrCorner.CornerRadius = UDim.new(0,14)
+
+local headerGradient = Instance.new("UIGradient", header) headerGradient.Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, Color3.fromRGB(120,0,200)), ColorSequenceKeypoint.new(1, Color3.fromRGB(60,0,150)) }) headerGradient.Rotation = 90
+
+local title = Instance.new("TextLabel", header) title.Size = UDim2.new(1,0,1,0) title.BackgroundTransparency = 1 title.Text = "Muscle Legends Hub" title.Font = Enum.Font.GothamBold title.TextSize = 20 title.TextColor3 = Color3.new(1,1,1) title.ZIndex = 1
+
+local closeBtn = Instance.new("TextButton", header) closeBtn.Size = UDim2.new(0,30,0,30) closeBtn.Position = UDim2.new(1,-35,0,10) closeBtn.BackgroundTransparency = 1 closeBtn.Text = "✕" closeBtn.Font = Enum.Font.GothamBold closeBtn.TextSize = 18 closeBtn.TextColor3 = Color3.fromRGB(255,150,150) closeBtn.MouseButton1Click:Connect(function() gui:Destroy() end)
+
+-- Tab Bar local tabBar = Instance.new("Frame", window) tabBar.Size = UDim2.new(1,0,0,40) tabBar.Position = UDim2.new(0,0,0,50) tabBar.BackgroundTransparency = 1
+
+local pages = {} local tabButtons = {} local tabs = {"Auto","Farm","Misc","Stats"}
+
+-- Content Area local content = Instance.new("Frame", window) content.Size = UDim2.new(1,-20,1,-110) content.Position = UDim2.new(0,10,0,100) content.BackgroundTransparency = 1
+
+for i, name in ipairs(tabs) do -- Tab Button local btn = Instance.new("TextButton", tabBar) btn.Size = UDim2.new(1/#tabs, -6, 1, -6) btn.Position = UDim2.new((i-1)/#tabs, 3, 0, 3) btn.BackgroundColor3 = Color3.fromRGB(30,0,60) btn.Font = Enum.Font.GothamBold btn.Text = name btn.TextSize = 15 btn.TextColor3 = Color3.new(1,1,1) local btnCr = Instance.new("UICorner", btn) btnCr.CornerRadius = UDim.new(0,8) tabButtons[name] = btn
+
+-- Page
+local page = Instance.new("ScrollingFrame", content)
+page.Name = name.."Page"
+page.Size = UDim2.new(1,0,1,0)
+page.CanvasSize = UDim2.new(0,0,2,0)
+page.ScrollBarThickness = 6
+page.BackgroundTransparency = 1
+page.Visible = false
+local layout = Instance.new("UIListLayout", page)
+layout.Padding = UDim.new(0,6)
+layout.SortOrder = Enum.SortOrder.LayoutOrder
+pages[name] = page
+
+-- Tab Click
+btn.MouseButton1Click:Connect(function()
+    for _, b in pairs(tabButtons) do b.BackgroundColor3 = Color3.fromRGB(30,0,60) end
+    btn.BackgroundColor3 = Color3.fromRGB(120,0,200)
+    for _, pg in pairs(pages) do pg.Visible = false end
+    page.Visible = true
+end)
+
+end
+
+-- Activate first tabButtons["Auto"].BackgroundColor3 = Color3.fromRGB(120,0,200) pages["Auto"].Visible = true
+
+-- Toggle Creator local toggles = {} local function makeToggle(page, label, key, action) toggles[key] = false local btn = Instance.new("TextButton", page) btn.Size = UDim2.new(1,0,0,32) btn.BackgroundColor3 = Color3.fromRGB(25,0,50) btn.Font = Enum.Font.Gotham btn.TextSize = 14 btn.Text = label.." [OFF]" btn.TextColor3 = Color3.fromRGB(200,200,255) local cr = Instance.new("UICorner", btn) cr.CornerRadius = UDim.new(0,8)
+
+btn.MouseButton1Click:Connect(function()
+    toggles[key] = not toggles[key]
+    btn.Text = label.." ["..(toggles[key] and "ON" or "OFF").."]"
+    local col = toggles[key] and Color3.fromRGB(130,0,220) or Color3.fromRGB(25,0,50)
+    TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = col}):Play()
+    createNotification(label..(toggles[key] and " Enabled" or " Disabled"))
+    if toggles[key] then spawn(action) end
+end)
+return btn
+
+end
+
+-- Feature Actions local function autoStrength() local ev=RS:WaitForChild("TrainEvent") while toggles.strength do ev:FireServer() task.wait(0.1) end end local function autoPunch()   local ev=RS:WaitForChild("PunchRemote") while toggles.punch    do ev:FireServer() task.wait(0.1) end end local function autoRock()    local ev=RS:WaitForChild("RockRemote") while toggles.rock     do ev:FireServer() task.wait(0.1) end end local function autoKill()    local ev=RS:WaitForChild("DamageEvent") while toggles.kill     do for _,pl in pairs(Players:GetPlayers()) do if pl~=player and pl.Character and pl.Character:FindFirstChild("Humanoid") then ev:FireServer(pl.Character.Humanoid) end end task.wait(0.5) end end local function autoRebirth() local ev=RS:WaitForChild("RebirthEvent") while toggles.rebirth  do ev:FireServer() createNotification("Reborn!") task.wait(5) end end local function fastRebirth() local ev=RS:WaitForChild("RebirthEvent") while toggles.rebirthFast do ev:FireServer() task.wait(0.2) end end local function autoPet()     local ev=RS:WaitForChild("buyEgg") while toggles.pet      do ev:InvokeServer("Advanced Egg") task.wait(2) end end local function autoAura()    local ev=RS:WaitForChild("buyAura") while toggles.aura     do ev:FireServer() task.wait(3) end end local function antiAfk()     while toggles.afk do task.wait(60) VirtualUser:Button2Down(Vector2.new(), workspace.CurrentCamera.CFrame) task.wait(1) VirtualUser:Button2Up(Vector2.new(), workspace.CurrentCamera.CFrame) end end
+
+-- Create Toggles makeToggle(pages["Auto"], "Auto Strength", "strength", autoStrength) makeToggle(pages["Auto"], "Auto Punch",    "punch",    autoPunch) makeToggle(pages["Auto"], "Auto Rock",     "rock",     autoRock) makeToggle(pages["Auto"], "Auto Kill",     "kill",     autoKill) makeToggle(pages["Farm"], "Auto Rebirth", "rebirth",  autoRebirth) makeToggle(pages["Farm"], "Fast Rebirth", "rebirthFast", fastRebirth) makeToggle(pages["Misc"], "Auto Pet",     "pet",      autoPet) makeToggle(pages["Misc"], "Auto Aura",    "aura",     autoAura) makeToggle(pages["Misc"], "Anti AFK",     "afk",      antiAfk)
+
+-- Stats Page Inputs local stats = pages["Stats"] local speedBox = Instance.new("TextBox", stats) speedBox.Size = UDim2.new(1,0,0,32); speedBox.PlaceholderText="WalkSpeed"; speedBox.Text="100"; speedBox.Font=Enum.Font.Gotham; speedBox.TextSize=14; speedBox.BackgroundColor3=Color3.fromRGB(25,0,50) local jumpBox = speedBox:Clone(); jumpBox.Parent=stats; jumpBox.Position=UDim2.new(0,0,0,40); jumpBox.PlaceholderText="JumpPower"; jumpBox.Text="100" local function applyStats() if player.Character then local h=player.Character:FindFirstChild("Humanoid") if h then h.WalkSpeed=tonumber(speedBox.Text) or 16; h.JumpPower=tonumber(jumpBox.Text) or 50 end end end speedBox.FocusLost:Connect(applyStats); jumpBox.FocusLost:Connect(applyStats); Players.LocalPlayer.CharacterAdded:Connect(function() task.wait(1) applyStats() end)
+
+-- Fly Hotkey local flying=false UIS.InputBegan:Connect(function(input, gp) if gp then return end if input.KeyCode==Enum.KeyCode.F then flying = not flying if player.Character then player.Character.Humanoid.PlatformStand = flying end if flying then spawn(function() local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart") local bg = Instance.new("BodyGyro", hrp); bg.P=9e4; bg.MaxTorque=Vector3.new(4e4,4e4,4e4) local bv = Instance.new("BodyVelocity", hrp); bv.MaxForce=Vector3.new(9e9,9e9,9e9) while flying and hrp.Parent do local vel=Vector3.new(); local cam=workspace.CurrentCamera if UIS:IsKeyDown(Enum.KeyCode.W) then vel=cam.CFrame.LookVector50 end if UIS:IsKeyDown(Enum.KeyCode.S) then vel=-cam.CFrame.LookVector50 end if UIS:IsKeyDown(Enum.KeyCode.A) then vel=-cam.CFrame.RightVector50 end if UIS:IsKeyDown(Enum.KeyCode.D) then vel=cam.CFrame.RightVector50 end bv.Velocity, bg.CFrame = vel, cam.CFrame; task.wait() end; bg:Destroy(); bv:Destroy() end) end createNotification("Fly "..(flying and "ON" or "OFF")) end end)
+
+-- Done createNotification("Cyber Legends Hub Loaded!", 3)
+
